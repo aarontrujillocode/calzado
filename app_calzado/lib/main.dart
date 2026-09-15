@@ -37,16 +37,17 @@ class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
 
   @override
-  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+  State createState() => _MainLayoutScreenState();
 }
 
-class _MainLayoutScreenState extends State<MainLayoutScreen> {
+// ATENCIÓN: Se añade  aquí abajo
+class _MainLayoutScreenState extends State {
   int _selectedIndex = 0;
   bool isLoggedIn = false;
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = [
+    final List pages = [
       const HomeScreen(),
       const CatalogScreen(),
       const FavoritesScreen(),
@@ -56,74 +57,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     ];
 
     return Scaffold(
-      // Si la pestaña actual es 'Catálogo' (índice 1), oculta el AppBar blanco.
-      // Para cualquier otra pestaña, sí muestra la barra blanca de KICKS&CO.
-      appBar: _selectedIndex == 1
-          ? null
-          : AppBar(
-              elevation: 0,
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.transparent,
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E24),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.do_not_step, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF1E1E24)),
-                      children: [
-                        TextSpan(text: 'KICKS'),
-                        TextSpan(
-                            text: '&CO',
-                            style: TextStyle(color: Color(0xFFFF4B3E))),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search, color: Color(0xFF1E1E24)),
-                  onPressed: () {},
-                ),
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.shopping_bag_outlined,
-                          color: Color(0xFF1E1E24)),
-                      onPressed: () {},
-                    ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF4B3E),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Text('2',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    )
-                  ],
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
+      appBar: null,
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

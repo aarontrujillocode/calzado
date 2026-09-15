@@ -27,54 +27,27 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Column(
         children: [
           // Header curvo con Logo
+// Header curvo con Logo de Imagen
+// Header con contenedor ovalado
+// Header con contenedor ovalado grande
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 40, bottom: 25),
+            padding: const EdgeInsets.only(top: 30, bottom: 15),
             decoration: const BoxDecoration(
               color: darkBlue,
             ),
             child: Center(
               child: Container(
-                width: 220,
-                height: 160,
+                width: MediaQuery.of(context).size.width * 0.88, // Ocupa el 88% del ancho
+                height: 200, // Mayor altura para que respire la imagen
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(100),
+                  borderRadius: BorderRadius.circular(100), // Curva suave y perfecta
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.roller_skating_rounded, 
-                      size: 50, 
-                      color: Color(0xFF1D52D8),
-                    ),
-                    const SizedBox(height: 4),
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontSize: 26, 
-                          fontWeight: FontWeight.w900, 
-                          color: Color(0xFF132A55),
-                          letterSpacing: -0.5,
-                        ),
-                        children: [
-                          TextSpan(text: 'Step'),
-                          TextSpan(text: 'Up', style: TextStyle(color: Color(0xFF1D52D8))),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'TU ESTILO, TU PASO',
-                      style: TextStyle(
-                        fontSize: 9, 
-                        fontWeight: FontWeight.w800, 
-                        color: Color(0xFF4A5568),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
+                child: Image.asset(
+                  'lib/assets/icono.png',
+                  fit: BoxFit.contain,
                 ),
               ),
             ),

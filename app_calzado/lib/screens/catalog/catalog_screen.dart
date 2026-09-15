@@ -8,7 +8,22 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   String selectedSubCategory = 'Zapatillas';
+
+  // ESTADOS DE FILTROS SELECCIONADOS
+  final Map<String, bool> selectedBrands = {
+    'Nike': true,
+    'Adidas': false,
+    'Puma': false,
+    'Reebok': false,
+    'Skechers': false,
+  };
+
+  final List<String> selectedSizes = ['8.5'];
+
+  String selectedColor = 'Azul';
 
   final List<Map<String, dynamic>> products = [
     {
@@ -62,155 +77,373 @@ class _CatalogScreenState extends State<CatalogScreen> {
     const primaryColor = Color(0xFF0F2042);
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFFAFAFA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // BARRA AZUL SUPERIOR PERSONALIZADA (Reemplaza el AppBar estándar)
-            Container(
-              color: primaryColor,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.white, size: 26),
-                    onPressed: () {},
-                  ),
-                  Row(
+      
+      // PANEL LATERAL DE FILTROS RÁPIDOS
+      drawer: Drawer(
+        width: MediaQuery.of(context).size.width * 0.8,
+        backgroundColor: Colors.white,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.search, color: Colors.white, size: 24),
-                        onPressed: () {},
+                      const Text(
+                        'FILTROS RÁPIDOS',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F2042),
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.filter_alt_outlined, color: Colors.white, size: 24),
-                            onPressed: () {},
-                          ),
-                          Positioned(
-                            right: 6,
-                            top: 6,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF1D52D8),
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 16,
-                                minHeight: 16,
-                              ),
-                              child: const Text(
-                                '4',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+
+                      // SECCIÓN MARCAS
+                      _buildFilterCard(
+                        title: 'Marca',
+                        content: Column(
+                          children: selectedBrands.keys.map((brand) {
+                            return CheckboxListTile(
+                              title: Text(
+                                brand,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF2D3748),
                                 ),
                               ),
+                              value: selectedBrands[brand],
+                              activeColor: const Color(0xFF0F2042),
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              onChanged: (val) {
+                                setState(() {
+                                  selectedBrands[brand] = val ?? false;
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // SECCIÓN TALLA
+                      _buildFilterCard(
+                        title: 'Talla',
+                        content: Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            '6', '7', '7.5', '8.5', '9.5', '10', '10.5', '11', '12', '13'
+                          ].map((size) {
+                            final isSelected = selectedSizes.contains(size);
+                            return SizedBox(
+                              width: 60,
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: Checkbox(
+                                      value: isSelected,
+                                      activeColor: const Color(0xFF0F2042),
+                                      onChanged: (val) {
+                                        setState(() {
+                                          if (val == true) {
+                                            selectedSizes.add(size);
+                                          } else {
+                                            selectedSizes.remove(size);
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    size,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF2D3748),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // SECCIÓN COLOR
+                      _buildFilterCard(
+                        title: 'Color',
+                        content: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildColorOption('Negro', Colors.black),
+                            _buildColorOption('Blanco', Colors.white, hasBorder: true),
+                            _buildColorOption('Gris', const Color(0xFF90A4AE)),
+                            _buildColorOption('Azul', const Color(0xFF1D52D8)),
+                            _buildColorOption('Marrón', const Color(0xFF8D4B18)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // BOTÓN APLICAR FILTROS
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F2042),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'APLICAR FILTROS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      // BARRA AZUL SUPERIOR
+      appBar: AppBar(
+        backgroundColor: primaryColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white, size: 24),
+                onPressed: () {},
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white, size: 24),
+                    onPressed: () {},
+                  ),
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.filter_alt_outlined, color: Colors.white, size: 24),
+                        onPressed: () {
+                          // Abre el panel lateral al hacer tap en el filtro
+                          _scaffoldKey.currentState?.openDrawer();
+                        },
+                      ),
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1D52D8),
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: const Text(
+                            '4',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
-            
-            // CONTENIDO PRINCIPAL
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Calzado de Hombre',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F2042),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      '128 Productos',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF8C98A4)),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Categoría',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F2042),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: ['Zapatillas', 'Vestir', 'Sandalias'].map((cat) {
-                        final isSelected = selectedSubCategory == cat;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: () => setState(() => selectedSubCategory = cat),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: isSelected ? primaryColor : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: isSelected ? primaryColor : const Color(0xFFCBD5E0),
-                                ),
-                              ),
-                              child: Text(
-                                cat,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : const Color(0xFF4A5568),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: products.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.58,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemBuilder: (context, index) {
-                        final item = products[index];
-                        return ProductCardWidget(
-                          item: item,
-                          onFavoriteToggle: () {
-                            setState(() {
-                              item['isFavorite'] = !(item['isFavorite'] ?? false);
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
+            ],
+          ),
+        ),
+      ),
+      
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Calzado de Hombre',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F2042),
               ),
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              '128 Productos',
+              style: TextStyle(fontSize: 13, color: Color(0xFF8C98A4)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Categoría',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F2042),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: ['Zapatillas', 'Vestir', 'Sandalias'].map((cat) {
+                final isSelected = selectedSubCategory == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => selectedSubCategory = cat),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? primaryColor : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? primaryColor : const Color(0xFFCBD5E0),
+                        ),
+                      ),
+                      child: Text(
+                        cat,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF4A5568),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: products.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.58,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemBuilder: (context, index) {
+                final item = products[index];
+                return ProductCardWidget(
+                  item: item,
+                  onFavoriteToggle: () {
+                    setState(() {
+                      item['isFavorite'] = !(item['isFavorite'] ?? false);
+                    });
+                  },
+                );
+              },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // WIDGETS AUXILIARES DE FILTRO
+  Widget _buildFilterCard({required String title, required Widget content}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F2042),
+            ),
+          ),
+          const SizedBox(height: 8),
+          content,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorOption(String label, Color color, {bool hasBorder = false}) {
+    final isSelected = selectedColor == label;
+    return GestureDetector(
+      onTap: () => setState(() => selectedColor = label),
+      child: Column(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: hasBorder ? Border.all(color: const Color(0xFFCBD5E0)) : null,
+            ),
+            child: isSelected
+                ? Icon(
+                    Icons.check,
+                    color: color == Colors.white ? Colors.black : Colors.white,
+                    size: 18,
+                  )
+                : null,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF4A5568),
+            ),
+          ),
+        ],
       ),
     );
   }
