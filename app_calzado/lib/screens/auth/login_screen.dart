@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
+import '../../models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
-  final VoidCallback onLoginSuccess;
+  final Function(UserModel) onLoginSuccess; // Callback actualizado
 
   const LoginScreen({super.key, required this.onLoginSuccess});
 
@@ -12,7 +14,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool isLogin = true;
   bool isPasswordObscured = true;
-  
+  bool isLoading = false;
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
@@ -20,30 +23,78 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color darkBlue = Color(0xFF0F2042);
   static const Color primaryBlue = Color(0xFF132A55);
 
+  Future<void> _handleSubmit() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final nombre = _nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || (!isLogin && nombre.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor completa todos los campos'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    Map<String, dynamic> result;
+    if (isLogin) {
+      result = await ApiService.login(email, password);
+    } else {
+      result = await ApiService.register(nombre, email, password);
+    }
+
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (result['status'] == 'success') {
+      if (isLogin) {
+        // Mapea la información entregada por el PHP y se la envía al MainLayoutScreen
+        final user = UserModel.fromJson(result['user']);
+        widget.onLoginSuccess(user);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registro exitoso. ¡Inicia sesión!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        setState(() {
+          isLogin = true;
+          _passwordController.clear();
+        });
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Ocurrió un error inesperado'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: darkBlue,
       body: Column(
         children: [
-          // Header curvo con Logo
-// Header curvo con Logo de Imagen
-// Header con contenedor ovalado
-// Header con contenedor ovalado grande
           Container(
             width: double.infinity,
             padding: const EdgeInsets.only(top: 30, bottom: 15),
-            decoration: const BoxDecoration(
-              color: darkBlue,
-            ),
+            decoration: const BoxDecoration(color: darkBlue),
             child: Center(
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.88, // Ocupa el 88% del ancho
-                height: 200, // Mayor altura para que respire la imagen
+                width: MediaQuery.of(context).size.width * 0.88,
+                height: 200,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(100), // Curva suave y perfecta
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Image.asset(
                   'lib/assets/icono.png',
@@ -52,8 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Formulario con tarjeta blanca redondeada
           Expanded(
             child: Container(
               width: double.infinity,
@@ -73,19 +122,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       isLogin ? 'Inicia sesión' : 'Crear cuenta',
                       style: const TextStyle(
-                        fontSize: 24, 
-                        fontWeight: FontWeight.bold, 
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                         color: Color(0xFF1A202C),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      isLogin ? 'Ingresa a tu cuenta para continuar' : 'Regístrate para comenzar a comprar',
+                      isLogin
+                          ? 'Ingresa a tu cuenta para continuar'
+                          : 'Regístrate para comenzar a comprar',
                       style: const TextStyle(color: Color(0xFF718096), fontSize: 13),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-
                     if (!isLogin) ...[
                       _buildTextField(
                         controller: _nameController,
@@ -94,7 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     _buildTextField(
                       controller: _emailController,
                       hintText: 'Correo electrónico',
@@ -102,7 +151,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
-
                     _buildTextField(
                       controller: _passwordController,
                       hintText: 'Contraseña',
@@ -115,7 +163,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-
                     if (isLogin) ...[
                       Align(
                         alignment: Alignment.centerRight,
@@ -134,11 +181,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                    ] else const SizedBox(height: 16),
-
+                    ] else
+                      const SizedBox(height: 16),
                     const SizedBox(height: 8),
-
-                    // Botón Principal
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -150,30 +195,38 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () {
-                          widget.onLoginSuccess();
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              isLogin ? 'Iniciar sesión' : 'Registrarse',
-                              style: const TextStyle(
-                                color: Colors.white, 
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                        onPressed: isLoading ? null : _handleSubmit,
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    isLogin ? 'Iniciar sesión' : 'Registrarse',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
-                          ],
-                        ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Divisor Google
                     Row(
                       children: [
                         Expanded(child: Container(height: 1, color: Colors.grey.shade200)),
@@ -187,10 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Expanded(child: Container(height: 1, color: Colors.grey.shade200)),
                       ],
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Botón Google
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
@@ -230,10 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Alternar Login/Registro
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

@@ -4,6 +4,7 @@ import 'screens/catalog/catalog_screen.dart';
 import 'screens/favorites/favorites_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_screen.dart';
+import 'models/user_model.dart';
 
 void main() {
   runApp(const ShoeStoreApp());
@@ -37,23 +38,43 @@ class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
 
   @override
-  State createState() => _MainLayoutScreenState();
+  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
 }
 
-// ATENCIÓN: Se añade  aquí abajo
-class _MainLayoutScreenState extends State {
+class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _selectedIndex = 0;
   bool isLoggedIn = false;
+  UserModel? currentUser;
 
   @override
   Widget build(BuildContext context) {
-    final List pages = [
+    final List<Widget> pages = [
       const HomeScreen(),
       const CatalogScreen(),
       const FavoritesScreen(),
       isLoggedIn
-          ? ProfileScreen(onLogout: () => setState(() => isLoggedIn = false))
-          : LoginScreen(onLoginSuccess: () => setState(() => isLoggedIn = true)),
+          ? ProfileScreen(
+              user: currentUser,
+              onLogout: () {
+                setState(() {
+                  currentUser = null;
+                  isLoggedIn = false;
+                });
+              },
+              onProfileUpdated: (updatedUser) {
+                setState(() {
+                  currentUser = updatedUser;
+                });
+              },
+            )
+          : LoginScreen(
+              onLoginSuccess: (user) {
+                setState(() {
+                  currentUser = user;
+                  isLoggedIn = true;
+                });
+              },
+            ),
     ];
 
     return Scaffold(
@@ -68,13 +89,21 @@ class _MainLayoutScreenState extends State {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded), label: 'Inicio'),
+            icon: Icon(Icons.grid_view_rounded),
+            label: 'Inicio',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.category_outlined), label: 'Catálogo'),
+            icon: Icon(Icons.category_outlined),
+            label: 'Catálogo',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border), label: 'Favoritos'),
+            icon: Icon(Icons.favorite_border),
+            label: 'Favoritos',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Cuenta'),
+            icon: Icon(Icons.person_outline),
+            label: 'Cuenta',
+          ),
         ],
       ),
     );
