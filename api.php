@@ -67,6 +67,7 @@ if ($action === 'login') {
         echo json_encode(["status" => "error", "message" => "El usuario no existe"]);
     }
     $stmt->close();
+
 } else if ($action === 'register') {
     $nombre = trim($data['nombre'] ?? '');
     $email = trim($data['email'] ?? '');
@@ -96,6 +97,7 @@ if ($action === 'login') {
         echo json_encode(["status" => "error", "message" => "Error al registrar usuario"]);
     }
     $stmt->close();
+
 } else if ($action === 'update_profile') {
     $id               = $data['id'] ?? null;
     $nombre           = trim($data['nombre'] ?? '');
@@ -117,6 +119,110 @@ if ($action === 'login') {
         echo json_encode(["status" => "error", "message" => "Error al actualizar perfil"]);
     }
     $stmt->close();
+
+} else if ($action === 'get_addresses') {
+    $usuario_id = $_GET['usuario_id'] ?? null;
+    if (empty($usuario_id)) {
+        echo json_encode(["status" => "error", "message" => "ID de usuario requerido"]);
+        exit();
+    }
+
+    $stmt = $conn->prepare("SELECT * FROM direcciones WHERE usuario_id = ? ORDER BY es_principal DESC, id DESC");
+    $stmt->bind_param("i", $usuario_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $direcciones = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['id'] = (int)$row['id'];
+        $row['usuario_id'] = (int)$row['usuario_id'];
+        $row['es_principal'] = (bool)$row['es_principal'];
+        $direcciones[] = $row;
+    }
+
+    echo json_encode(["status" => "success", "direcciones" => $direcciones]);
+    $stmt->close();
+
+} else if ($action === 'add_address') {
+    $usuario_id   = $data['usuario_id'] ?? null;
+    $titulo       = trim($data['titulo'] ?? '');
+    $direccion    = trim($data['direccion'] ?? '');
+    $distrito     = trim($data['distrito'] ?? '');
+    $ciudad       = trim($data['ciudad'] ?? 'Lima');
+    $pais         = trim($data['pais'] ?? 'Perú');
+    $codigo_postal= trim($data['codigo_postal'] ?? '15037');
+    $telefono     = trim($data['telefono'] ?? '');
+    $es_principal = !empty($data['es_principal']) ? 1 : 0;
+
+    if (empty($usuario_id) || empty($titulo) || empty($direccion) || empty($distrito) || empty($telefono)) {
+        echo json_encode(["status" => "error", "message" => "Campos obligatorios incompletos"]);
+        exit();
+    }
+
+    if ($es_principal === 1) {
+        $resetStmt = $conn->prepare("UPDATE direcciones SET es_principal = 0 WHERE usuario_id = ?");
+        $resetStmt->bind_param("i", $usuario_id);
+        $resetStmt->execute();
+        $resetStmt->close();
+    }
+
+    $stmt = $conn->prepare("INSERT INTO direcciones (usuario_id, titulo, direccion, distrito, ciudad, pais, codigo_postal, telefono, es_principal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("isssssssi", $usuario_id, $titulo, $direccion, $distrito, $ciudad, $pais, $codigo_postal, $telefono, $es_principal);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Dirección agregada con éxito"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al guardar dirección"]);
+    }
+    $stmt->close();
+
+} else if ($action === 'delete_address') {
+    $id = $data['id'] ?? null;
+    if (empty($id)) {
+        echo json_encode(["status" => "error", "message" => "ID de dirección requerido"]);
+        exit();
+    }
+
+    $stmt = $conn->prepare("DELETE FROM direcciones WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Dirección eliminada correctamente"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al eliminar"]);
+    }
+    $stmt->close();
+
+} else if ($action === 'get_products') {
+    // Consulta directa a las columnas de la tabla productos
+    $sql = "SELECT 
+                id, 
+                nombre, 
+                descripcion, 
+                precio, 
+                imagen, 
+                subcategoria, 
+                categoria,
+                stock_total,
+                tallas
+            FROM productos
+            ORDER BY id DESC";
+
+    $result = $conn->query($sql);
+
+    $productos = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $row['precio'] = (float)$row['precio'];
+            $row['stock_total'] = (int)$row['stock_total'];
+            $row['tallas'] = $row['tallas'] ?? 'Sin tallas';
+            $productos[] = $row;
+        }
+    }
+
+    echo json_encode(["status" => "success", "productos" => $productos]);
+
 } else {
     echo json_encode(["status" => "error", "message" => "Acción no válida"]);
 }

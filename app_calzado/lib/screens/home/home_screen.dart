@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:app_calzado/models/product_model.dart';
+import 'package:app_calzado/services/api_service.dart';
+import 'package:app_calzado/screens/product_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -7,35 +10,24 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   int selectedCategoryIndex = 0;
   final List<String> categories = ['Todos', 'Hombres', 'Mujeres', 'Infantil'];
+  late Future<List<Product>> _futureProducts;
 
-  final List<Map<String, dynamic>> products = [
-    {
-      'id': '1',
-      'brand': 'R18',
-      'title': 'Zapatillas Urbanas R18 Roma XL Mujer',
-      'originalPrice': 'S/ 219.90',
-      'offerPrice': 'S/ 87.90',
-      'discount': '60% OFF',
-      'image': 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80',
-      'isFavorite': false,
-    },
-    {
-      'id': '2',
-      'brand': 'ADIDAS',
-      'title': 'Zapatillas Deportivas Hombres Lite Racer 4.0',
-      'originalPrice': 'S/ 179.00',
-      'offerPrice': 'S/ 107.90',
-      'discount': '60% OFF',
-      'image': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
-      'isFavorite': false,
-    },
-  ];
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureProducts = ApiService.getProducts();
+  }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     const primaryBlue = Color(0xFF0F2042);
 
     return Scaffold(
@@ -44,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             // CABECERA AZUL CON CURVA
-Container(
+            Container(
               decoration: const BoxDecoration(
                 color: primaryBlue,
                 borderRadius: BorderRadius.only(
@@ -64,7 +56,6 @@ Container(
                         children: [
                           Row(
                             children: [
-                              // CONTENEDOR CON TU ARCHIVO icono1.png
                               Container(
                                 width: 42,
                                 height: 42,
@@ -74,7 +65,7 @@ Container(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Image.asset(
-                                  'lib/assets/icono1.png', // Ruta actualizada
+                                  'lib/assets/icono1.png',
                                   fit: BoxFit.contain,
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Icon(
@@ -129,13 +120,12 @@ Container(
             const SizedBox(height: 16),
 
             // BANNER PROMOCIONAL
- // BANNER PROMOCIONAL (SOLUCIONADO OVERFLOW)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  height: 180, // Aumentado a 180 para dar más espacio
+                  height: 180,
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     image: DecorationImage(
@@ -273,27 +263,59 @@ Container(
 
             const SizedBox(height: 16),
 
-            // GRILLA DE PRODUCTOS
+            // GRILLA DE PRODUCTOS DINÁMICA
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: products.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.58,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemBuilder: (context, index) {
-                  final item = products[index];
-                  return ProductCardHomeWidget(
-                    item: item,
-                    onFavoriteToggle: () {
-                      setState(() {
-                        item['isFavorite'] = !(item['isFavorite'] ?? false);
-                      });
+              child: FutureBuilder<List<Product>>(
+                future: _futureProducts,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: Text('No hay productos disponibles')),
+                    );
+                  }
+
+                  final allProducts = snapshot.data!;
+                  final selectedCategory = categories[selectedCategoryIndex];
+
+                  final filteredProducts = selectedCategory == 'Todos'
+                      ? allProducts
+                      : allProducts.where((p) {
+                          final catProd = p.categoria.trim().toLowerCase();
+                          final catSel = selectedCategory.trim().toLowerCase();
+                          return catProd == catSel;
+                        }).toList();
+
+                  if (filteredProducts.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: Text('No hay productos en esta categoría')),
+                    );
+                  }
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredProducts.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.58,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = filteredProducts[index];
+                      // SE AGREGA LA KEY ÚNICA POR PRODUCTO AQUÍ
+                      return ProductCardHomeWidget(
+                        key: ValueKey('prod_${product.id}_${product.categoria}'),
+                        product: product,
+                      );
                     },
                   );
                 },
@@ -308,141 +330,182 @@ Container(
   }
 }
 
-class ProductCardHomeWidget extends StatelessWidget {
-  final Map<String, dynamic> item;
-  final VoidCallback onFavoriteToggle;
+class ProductCardHomeWidget extends StatefulWidget {
+  final Product product;
 
   const ProductCardHomeWidget({
     super.key,
-    required this.item,
-    required this.onFavoriteToggle,
+    required this.product,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final bool isFav = item['isFavorite'] ?? false;
+  State<ProductCardHomeWidget> createState() => _ProductCardHomeWidgetState();
+}
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: List.generate(
-                  5,
-                  (i) => Icon(
-                    i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
-                    color: const Color(0xFFFFB800),
-                    size: 14,
+class _ProductCardHomeWidgetState extends State<ProductCardHomeWidget> {
+  bool isFav = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool tieneStock = widget.product.stockTotal > 0;
+
+    return GestureDetector(
+      onTap: tieneStock
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailScreen(product: widget.product),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEDF2F7)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ESTRELLAS Y FAVORITO
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
+                      color: const Color(0xFFFFB800),
+                      size: 14,
+                    ),
                   ),
                 ),
-              ),
-              GestureDetector(
-                onTap: onFavoriteToggle,
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: isFav ? Colors.red : const Color(0xFFCBD5E0),
-                  size: 18,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: const Color(0xFFF7FAFC),
-                image: DecorationImage(
-                  image: NetworkImage(item['image']),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item['brand'],
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFA0AEC0),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            item['title'],
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A202C),
-              height: 1.2,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text(
-                'Precio oferta: ',
-                style: TextStyle(fontSize: 9, color: Color(0xFF8C98A4)),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF4B3E),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  item['discount'],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isFav = !isFav;
+                    });
+                  },
+                  child: Icon(
+                    Icons.favorite_rounded,
+                    color: isFav ? Colors.red : const Color(0xFFCBD5E0),
+                    size: 18,
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // IMAGEN OPTIMIZADA PARA FLUTTER WEB / WEBGL
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      widget.product.imagen.isNotEmpty
+                          ? widget.product.imagen
+                          : 'https://via.placeholder.com/300',
+                      key: ValueKey('img_${widget.product.id}'),
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true, // EVITA PARPADEO Y ERRORES DE TEXTURA AL CAMBIAR DE PESTAÑA
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: const Color(0xFFF7FAFC),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xFFF7FAFC),
+                        child: const Icon(
+                          Icons.broken_image_rounded,
+                          color: Color(0xFFA0AEC0),
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (!tieneStock)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'AGOTADO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(
-                item['originalPrice'],
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFFA0AEC0),
-                  decoration: TextDecoration.lineThrough,
-                ),
+            ),
+            const SizedBox(height: 8),
+
+            // SUBCATEGORÍA
+            Text(
+              widget.product.subcategoria.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFA0AEC0),
               ),
-              const SizedBox(width: 4),
-              Text(
-                item['offerPrice'],
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F2042),
-                ),
+            ),
+            const SizedBox(height: 2),
+
+            // NOMBRE DEL PRODUCTO
+            Text(
+              widget.product.nombre,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: tieneStock ? const Color(0xFF1A202C) : Colors.grey,
+                height: 1.2,
               ),
-            ],
-          ),
-        ],
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+
+            // PRECIO
+            Text(
+              'S/ ${widget.product.precio.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: tieneStock ? const Color(0xFF0F2042) : Colors.grey,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
 import 'edit_profile_screen.dart';
+import 'addresses_screen.dart'; // Asegúrate de que esta ruta coincida con la ubicación real de tu archivo
 
 class ProfileScreen extends StatelessWidget {
   final UserModel? user;
@@ -132,7 +133,16 @@ class ProfileScreen extends StatelessWidget {
                 icon: Icons.location_on_outlined,
                 title: 'Direcciones',
                 subtitle: 'Gestiona tus direcciones',
-                onTap: () {},
+                onTap: () {
+                  if (user != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddressesScreen(user: user!),
+                      ),
+                    );
+                  }
+                },
               ),
               _buildOptionTile(
                 icon: Icons.shopping_bag_outlined,
