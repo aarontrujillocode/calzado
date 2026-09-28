@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:app_calzado/models/product_model.dart';
 import 'package:app_calzado/services/api_service.dart';
-import 'package:app_calzado/screens/product_detail_screen.dart';
+//  CORRECTO
+import 'package:app_calzado/screens/home/product_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

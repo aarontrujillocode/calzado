@@ -21,6 +21,9 @@ class Product {
     required this.tallas,
   });
 
+  // Getter auxiliar para evitar errores de compilación si se busca product.marca
+  String get marca => subcategoria;
+
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] is int ? json['id'] : int.parse(json['id']?.toString() ?? '0'),
@@ -30,7 +33,6 @@ class Product {
       imagen: json['imagen']?.toString() ?? '',
       subcategoria: json['subcategoria']?.toString() ?? '',
       categoria: json['categoria']?.toString() ?? '',
-      // Mapeo seguro de stock_total
       stockTotal: int.tryParse(json['stock_total']?.toString() ?? '0') ?? 0,
       tallas: json['tallas']?.toString() ?? '',
     );

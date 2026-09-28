@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../models/product_model.dart';
-import '../screens/product_detail_screen.dart';
+import 'package:app_calzado/models/product_model.dart';
+import 'package:app_calzado/screens/home/product_detail_screen.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -22,7 +22,7 @@ class ProductCard extends StatelessWidget {
                 ),
               );
             }
-          : null, // Desactiva el clic si está agotado
+          : null,
       borderRadius: BorderRadius.circular(12),
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -33,11 +33,10 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
-                  // Imagen del calzado con clave única para reiniciar la textura WebGL en Web
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     child: CachedNetworkImage(
-                      key: ValueKey('img_${product.id}_${product.imagen}'),
+                      key: ValueKey('img_\({product.id}_\){product.imagen}'),
                       imageUrl: product.imagen.isNotEmpty
                           ? product.imagen
                           : 'https://via.placeholder.com/150',
@@ -64,8 +63,6 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
-                  // Insignia si está sin stock
                   if (!tieneStock)
                     Positioned(
                       top: 8,

@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $host = "127.0.0.1";
 $user = "root";
 $pass = "";
-$db   = "calzado_store";
+$db   = "calzado_store_v2";
 
 $conn = new mysqli($host, $user, $pass, $db);
 
