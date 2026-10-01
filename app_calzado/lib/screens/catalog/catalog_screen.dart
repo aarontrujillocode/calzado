@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:app_calzado/models/product_model.dart';
 import 'package:app_calzado/services/api_service.dart';
 import 'package:app_calzado/services/cart_service.dart';
+import 'package:app_calzado/services/favorites_service.dart';
 import 'package:app_calzado/screens/auth/cart_screen.dart';
+import 'package:app_calzado/screens/favorites/favorites_screen.dart';
 import 'package:app_calzado/screens/home/product_detail_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
@@ -44,6 +46,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
               ),
               Row(
                 children: [
+                  // BOTÓN DE FAVORITOS
+                  IconButton(
+                    icon: const Icon(Icons.favorite_outline, color: Colors.white, size: 24),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+                      );
+                    },
+                  ),
                   IconButton(
                     icon: const Icon(Icons.search, color: Colors.white, size: 24),
                     onPressed: () {},
@@ -207,94 +219,126 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           ),
                         ),
                       )
-                    : GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filteredProducts.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.65,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
+                    : ListenableBuilder(
+                        listenable: FavoritesService.instance,
+                        builder: (context, _) {
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: filteredProducts.length,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.65,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              final isFav = FavoritesService.instance.isFavorite(product.id);
 
-                          final String marcaTexto = product.marca.isNotEmpty
-                              ? product.marca.toUpperCase()
-                              : product.subcategoria.toUpperCase();
+                              final String marcaTexto = product.marca.isNotEmpty
+                                  ? product.marca.toUpperCase()
+                                  : product.subcategoria.toUpperCase();
 
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProductDetailScreen(product: product),
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailScreen(product: product),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFEDF2F7)),
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(10),
+                                              child: Image.network(
+                                                product.imagen.isNotEmpty
+                                                    ? product.imagen
+                                                    : 'https://via.placeholder.com/300',
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                  color: const Color(0xFFF7FAFC),
+                                                  child: const Icon(
+                                                    Icons.broken_image_rounded,
+                                                    color: Color(0xFFA0AEC0),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            // BOTÓN CORAZÓN DE FAVORITO
+                                            Positioned(
+                                              top: 6,
+                                              right: 6,
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  FavoritesService.instance.toggleFavorite(product);
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(5),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.9),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(
+                                                    isFav ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+                                                    color: isFav ? Colors.red : const Color(0xFFCBD5E0),
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        marcaTexto,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFA0AEC0),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        product.nombre,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1A202C),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'S/ ${product.precio.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF0F2042),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFEDF2F7)),
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.network(
-                                        product.imagen.isNotEmpty
-                                            ? product.imagen
-                                            : 'https://via.placeholder.com/300',
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Container(
-                                          color: const Color(0xFFF7FAFC),
-                                          child: const Icon(
-                                            Icons.broken_image_rounded,
-                                            color: Color(0xFFA0AEC0),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    marcaTexto,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFA0AEC0),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    product.nombre,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1A202C),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'S/ ${product.precio.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF0F2042),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           );
                         },
                       ),

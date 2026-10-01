@@ -34,6 +34,54 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _dobController = TextEditingController(text: widget.user.fechaNacimiento);
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _dobController.dispose();
+    super.dispose();
+  }
+
+  // MÉTODO PARA ABRIR EL SELECTOR DE FECHAS
+  Future<void> _selectDate() async {
+    // Intentar parsear la fecha actual del campo si existe, o usar año 2000 por defecto
+    DateTime initialDate = DateTime(2000);
+    if (_dobController.text.trim().isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(_dobController.text.trim());
+      } catch (_) {}
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1920),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: darkBlue,
+              onPrimary: Colors.white,
+              onSurface: darkBlue,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        // Formatear como YYYY-MM-DD
+        final String formattedDate =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        _dobController.text = formattedDate;
+      });
+    }
+  }
+
   Future<void> _saveChanges() async {
     setState(() => isLoading = true);
 
@@ -62,12 +110,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       widget.onProfileUpdated(updatedUser);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil actualizado con éxito'), backgroundColor: Colors.green),
+        const SnackBar(
+            content: Text('Perfil actualizado con éxito'),
+            backgroundColor: Colors.green),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? 'Error al actualizar'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(response['message'] ?? 'Error al actualizar'),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -97,25 +149,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 24),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nombre completo', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                  labelText: 'Nombre completo', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                  labelText: 'Correo electrónico', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _phoneController,
-              decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                  labelText: 'Teléfono', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
+            // CAMPO FECHA DE NACIMIENTO CON SELECTOR DE FECHAS
             TextField(
               controller: _dobController,
-              decoration: const InputDecoration(
+              readOnly: true,
+              onTap: _selectDate,
+              decoration: InputDecoration(
                 labelText: 'Fecha de nacimiento',
-                suffixIcon: Icon(Icons.calendar_today),
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: _selectDate,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -127,7 +188,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onPressed: isLoading ? null : _saveChanges,
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Guardar cambios', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    : const Text('Guardar cambios',
+                        style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
           ],

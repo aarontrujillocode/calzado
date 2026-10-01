@@ -15,10 +15,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? selectedSize;
   int quantity = 1;
 
+  List<String> get availableSizes {
+    if (widget.product.tallas.trim().isEmpty) return [];
+    return widget.product.tallas
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF0F2042);
     const accentColor = Color(0xFFFF4B3E);
+    final sizes = availableSizes;
 
     return Scaffold(
       appBar: AppBar(
@@ -67,7 +77,70 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     widget.product.descripcion,
                     style: const TextStyle(color: Colors.black87, fontSize: 14),
                   ),
-                  const SizedBox(height: 24),
+                  
+                  const SizedBox(height: 14),
+
+                  // INDICADOR DE STOCK DISPONIBLE
+                  Row(
+                    children: [
+                      Icon(
+                        widget.product.stockTotal > 0 ? Icons.check_circle_outline : Icons.highlight_off,
+                        size: 18,
+                        color: widget.product.stockTotal > 0 ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        widget.product.stockTotal > 0
+                            ? 'Stock disponible: ${widget.product.stockTotal} unidades'
+                            : 'Agotado',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: widget.product.stockTotal > 0 ? Colors.green[700] : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // SECTOR DE TALLAS
+                  const Text(
+                    'Selecciona tu Talla:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  sizes.isEmpty
+                      ? const Text(
+                          'Talla Única / No especificada',
+                          style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                        )
+                      : Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: sizes.map((size) {
+                            final isSelected = selectedSize == size;
+                            return ChoiceChip(
+                              label: Text(
+                                size,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              selected: isSelected,
+                              selectedColor: primaryColor,
+                              backgroundColor: Colors.grey[200],
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  selectedSize = selected ? size : null;
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+
+                  const SizedBox(height: 30),
 
                   // Botón para agregar al carrito
                   SizedBox(
@@ -82,6 +155,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       onPressed: widget.product.stockTotal > 0
                           ? () {
+                              if (sizes.isNotEmpty && selectedSize == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Por favor, selecciona una talla antes de agregar'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
                               final String tallaElegida = selectedSize ?? 'Unica';
                               CartService.instance.addProduct(
                                 widget.product,

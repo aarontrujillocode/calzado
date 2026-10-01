@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:app_calzado/models/product_model.dart';
 import 'package:app_calzado/services/api_service.dart';
-//  CORRECTO
+import 'package:app_calzado/services/cart_service.dart';
+import 'package:app_calzado/services/favorites_service.dart';
+import 'package:app_calzado/screens/auth/cart_screen.dart';
 import 'package:app_calzado/screens/home/product_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -88,9 +90,50 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                               ),
                             ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 24),
-                            onPressed: () {},
+                          ListenableBuilder(
+                            listenable: CartService.instance,
+                            builder: (context, _) {
+                              final count = CartService.instance.itemCount;
+                              return Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 24),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const CartScreen()),
+                                      );
+                                    },
+                                  ),
+                                  if (count > 0)
+                                    Positioned(
+                                      right: 6,
+                                      top: 6,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFF4B3E),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 16,
+                                          minHeight: 16,
+                                        ),
+                                        child: Text(
+                                          '$count',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -312,7 +355,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                     ),
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
-                      // SE AGREGA LA KEY ÚNICA POR PRODUCTO AQUÍ
                       return ProductCardHomeWidget(
                         key: ValueKey('prod_${product.id}_${product.categoria}'),
                         product: product,
@@ -331,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 }
 
-class ProductCardHomeWidget extends StatefulWidget {
+class ProductCardHomeWidget extends StatelessWidget {
   final Product product;
 
   const ProductCardHomeWidget({
@@ -340,174 +382,172 @@ class ProductCardHomeWidget extends StatefulWidget {
   });
 
   @override
-  State<ProductCardHomeWidget> createState() => _ProductCardHomeWidgetState();
-}
-
-class _ProductCardHomeWidgetState extends State<ProductCardHomeWidget> {
-  bool isFav = false;
-
-  @override
   Widget build(BuildContext context) {
-    final bool tieneStock = widget.product.stockTotal > 0;
+    final bool tieneStock = product.stockTotal > 0;
 
-    return GestureDetector(
-      onTap: tieneStock
-          ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProductDetailScreen(product: widget.product),
-                ),
-              );
-            }
-          : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFEDF2F7)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ESTRELLAS Y FAVORITO
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
-                      color: const Color(0xFFFFB800),
-                      size: 14,
+    return ListenableBuilder(
+      listenable: FavoritesService.instance,
+      builder: (context, _) {
+        final isFav = FavoritesService.instance.isFavorite(product.id);
+
+        return GestureDetector(
+          onTap: tieneStock
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailScreen(product: product),
                     ),
+                  );
+                }
+              : null,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFEDF2F7)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ESTRELLAS Y FAVORITO
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: List.generate(
+                        5,
+                        (i) => Icon(
+                          i < 4 ? Icons.star_rounded : Icons.star_half_rounded,
+                          color: const Color(0xFFFFB800),
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        FavoritesService.instance.toggleFavorite(product);
+                      },
+                      child: Icon(
+                        isFav ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+                        color: isFav ? Colors.red : const Color(0xFFCBD5E0),
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // IMAGEN
+                Expanded(
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          product.imagen.isNotEmpty
+                              ? product.imagen
+                              : 'https://via.placeholder.com/300',
+                          key: ValueKey('img_${product.id}'),
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: const Color(0xFFF7FAFC),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: const Color(0xFFF7FAFC),
+                            child: const Icon(
+                              Icons.broken_image_rounded,
+                              color: Color(0xFFA0AEC0),
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (!tieneStock)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'AGOTADO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isFav = !isFav;
-                    });
-                  },
-                  child: Icon(
-                    Icons.favorite_rounded,
-                    color: isFav ? Colors.red : const Color(0xFFCBD5E0),
-                    size: 18,
+                const SizedBox(height: 8),
+
+                // SUBCATEGORÍA
+                Text(
+                  product.subcategoria.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFA0AEC0),
+                  ),
+                ),
+                const SizedBox(height: 2),
+
+                // NOMBRE DEL PRODUCTO
+                Text(
+                  product.nombre,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: tieneStock ? const Color(0xFF1A202C) : Colors.grey,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+
+                // PRECIO
+                Text(
+                  'S/ ${product.precio.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: tieneStock ? const Color(0xFF0F2042) : Colors.grey,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-
-            // IMAGEN OPTIMIZADA PARA FLUTTER WEB / WEBGL
-            Expanded(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      widget.product.imagen.isNotEmpty
-                          ? widget.product.imagen
-                          : 'https://via.placeholder.com/300',
-                      key: ValueKey('img_${widget.product.id}'),
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      gaplessPlayback: true, // EVITA PARPADEO Y ERRORES DE TEXTURA AL CAMBIAR DE PESTAÑA
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: const Color(0xFFF7FAFC),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFFF7FAFC),
-                        child: const Icon(
-                          Icons.broken_image_rounded,
-                          color: Color(0xFFA0AEC0),
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (!tieneStock)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'AGOTADO',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // SUBCATEGORÍA
-            Text(
-              widget.product.subcategoria.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFA0AEC0),
-              ),
-            ),
-            const SizedBox(height: 2),
-
-            // NOMBRE DEL PRODUCTO
-            Text(
-              widget.product.nombre,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: tieneStock ? const Color(0xFF1A202C) : Colors.grey,
-                height: 1.2,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-
-            // PRECIO
-            Text(
-              'S/ ${widget.product.precio.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                color: tieneStock ? const Color(0xFF0F2042) : Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
