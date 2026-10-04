@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:app_calzado/models/product_model.dart';
 import 'package:app_calzado/services/cart_service.dart';
+import 'package:app_calzado/models/user_model.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
+  final bool isLoggedIn;
+  final UserModel? currentUser;
+  final void Function(UserModel)? onLoginSuccess;
 
-  const ProductDetailScreen({super.key, required this.product});
+  const ProductDetailScreen({
+    super.key,
+    required this.product,
+    this.isLoggedIn = false,
+    this.currentUser,
+    this.onLoginSuccess,
+  });
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();

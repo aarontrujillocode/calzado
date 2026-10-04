@@ -4,9 +4,19 @@ import 'package:app_calzado/services/favorites_service.dart';
 import 'package:app_calzado/services/cart_service.dart';
 import 'package:app_calzado/screens/auth/cart_screen.dart';
 import 'package:app_calzado/screens/home/product_detail_screen.dart';
+import 'package:app_calzado/models/user_model.dart';
 
 class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
+  final bool isLoggedIn;
+  final UserModel? currentUser;
+  final void Function(UserModel)? onLoginSuccess;
+
+  const FavoritesScreen({
+    super.key,
+    this.isLoggedIn = false,
+    this.currentUser,
+    this.onLoginSuccess,
+  });
 
   static const Color darkBlue = Color(0xFF0F2042);
 
@@ -41,7 +51,12 @@ class FavoritesScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const CartScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => CartScreen(
+                            isLoggedIn: isLoggedIn,
+                            onLoginSuccess: onLoginSuccess,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -144,7 +159,12 @@ class FavoritesScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProductDetailScreen(product: product),
+                        builder: (context) => ProductDetailScreen(
+                          product: product,
+                          isLoggedIn: isLoggedIn,
+                          currentUser: currentUser,
+                          onLoginSuccess: onLoginSuccess,
+                        ),
                       ),
                     );
                   },

@@ -6,9 +6,19 @@ import 'package:app_calzado/services/favorites_service.dart';
 import 'package:app_calzado/screens/auth/cart_screen.dart';
 import 'package:app_calzado/screens/favorites/favorites_screen.dart';
 import 'package:app_calzado/screens/home/product_detail_screen.dart';
+import 'package:app_calzado/models/user_model.dart';
 
 class CatalogScreen extends StatefulWidget {
-  const CatalogScreen({super.key});
+  final bool isLoggedIn;
+  final UserModel? currentUser;
+  final void Function(UserModel)? onLoginSuccess;
+
+  const CatalogScreen({
+    super.key,
+    this.isLoggedIn = false,
+    this.currentUser,
+    this.onLoginSuccess,
+  });
 
   @override
   State<CatalogScreen> createState() => _CatalogScreenState();
@@ -52,7 +62,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => FavoritesScreen(
+                            isLoggedIn: widget.isLoggedIn,
+                            currentUser: widget.currentUser,
+                            onLoginSuccess: widget.onLoginSuccess,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -72,7 +88,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const CartScreen()),
+                                MaterialPageRoute(
+                                  builder: (context) => CartScreen(
+                                    isLoggedIn: widget.isLoggedIn,
+                                    onLoginSuccess: widget.onLoginSuccess,
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -245,7 +266,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ProductDetailScreen(product: product),
+                                      builder: (context) => ProductDetailScreen(
+                                        product: product,
+                                        isLoggedIn: widget.isLoggedIn,
+                                        currentUser: widget.currentUser,
+                                        onLoginSuccess: widget.onLoginSuccess,
+                                      ),
                                     ),
                                   );
                                 },

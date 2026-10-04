@@ -5,9 +5,19 @@ import 'package:app_calzado/services/cart_service.dart';
 import 'package:app_calzado/services/favorites_service.dart';
 import 'package:app_calzado/screens/auth/cart_screen.dart';
 import 'package:app_calzado/screens/home/product_detail_screen.dart';
+import 'package:app_calzado/models/user_model.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool isLoggedIn;
+  final UserModel? currentUser;
+  final void Function(UserModel)? onLoginSuccess;
+
+  const HomeScreen({
+    super.key,
+    this.isLoggedIn = false,
+    this.currentUser,
+    this.onLoginSuccess,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -102,7 +112,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     onPressed: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (context) => const CartScreen()),
+                                        MaterialPageRoute(
+                                          builder: (context) => CartScreen(
+                                            isLoggedIn: widget.isLoggedIn,
+                                            onLoginSuccess: widget.onLoginSuccess,
+                                          ),
+                                        ),
                                       );
                                     },
                                   ),
@@ -358,6 +373,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                       return ProductCardHomeWidget(
                         key: ValueKey('prod_${product.id}_${product.categoria}'),
                         product: product,
+                        isLoggedIn: widget.isLoggedIn,
+                        currentUser: widget.currentUser,
+                        onLoginSuccess: widget.onLoginSuccess,
                       );
                     },
                   );
@@ -375,10 +393,16 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
 class ProductCardHomeWidget extends StatelessWidget {
   final Product product;
+  final bool isLoggedIn;
+  final UserModel? currentUser;
+  final void Function(UserModel)? onLoginSuccess;
 
   const ProductCardHomeWidget({
     super.key,
     required this.product,
+    this.isLoggedIn = false,
+    this.currentUser,
+    this.onLoginSuccess,
   });
 
   @override
@@ -396,7 +420,12 @@ class ProductCardHomeWidget extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProductDetailScreen(product: product),
+                      builder: (context) => ProductDetailScreen(
+                        product: product,
+                        isLoggedIn: isLoggedIn,
+                        currentUser: currentUser,
+                        onLoginSuccess: onLoginSuccess,
+                      ),
                     ),
                   );
                 }

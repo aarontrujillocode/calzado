@@ -3,10 +3,11 @@ import 'package:app_calzado/models/cart_item_model.dart';
 import 'package:app_calzado/services/cart_service.dart';
 import 'package:app_calzado/screens/auth/login_screen.dart';
 import 'package:app_calzado/screens/catalog/checkout_screen.dart';
+import 'package:app_calzado/models/user_model.dart';
 
 class CartScreen extends StatefulWidget {
   final bool isLoggedIn;
-  final Function(dynamic)? onLoginSuccess;
+  final void Function(UserModel)? onLoginSuccess;
 
   const CartScreen({
     super.key,

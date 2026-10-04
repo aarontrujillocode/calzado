@@ -4,7 +4,7 @@ import 'screens/catalog/catalog_screen.dart';
 import 'screens/favorites/favorites_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_screen.dart';
-import 'models/user_model.dart';
+import 'package:app_calzado/models/user_model.dart';
 
 void main() {
   runApp(const ShoeStoreApp());
@@ -46,12 +46,31 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   bool isLoggedIn = false;
   UserModel? currentUser;
 
+  void _updateUserSession(UserModel user) {
+    setState(() {
+      currentUser = user;
+      isLoggedIn = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const HomeScreen(),
-      const CatalogScreen(),
-      const FavoritesScreen(),
+      HomeScreen(
+        isLoggedIn: isLoggedIn,
+        currentUser: currentUser,
+        onLoginSuccess: _updateUserSession,
+      ),
+      CatalogScreen(
+        isLoggedIn: isLoggedIn,
+        currentUser: currentUser,
+        onLoginSuccess: _updateUserSession,
+      ),
+      FavoritesScreen(
+        isLoggedIn: isLoggedIn,
+        currentUser: currentUser,
+        onLoginSuccess: _updateUserSession,
+      ),
       isLoggedIn
           ? ProfileScreen(
               user: currentUser,
@@ -68,18 +87,16 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               },
             )
           : LoginScreen(
-              onLoginSuccess: (user) {
-                setState(() {
-                  currentUser = user;
-                  isLoggedIn = true;
-                });
-              },
+              onLoginSuccess: _updateUserSession,
             ),
     ];
 
     return Scaffold(
       appBar: null,
-      body: pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
