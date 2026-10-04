@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:app_calzado/models/cart_item_model.dart';
 import 'package:app_calzado/services/cart_service.dart';
+import 'package:app_calzado/screens/auth/login_screen.dart';
+import 'package:app_calzado/screens/catalog/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  final bool isLoggedIn;
+  final Function(dynamic)? onLoginSuccess;
+
+  const CartScreen({
+    super.key,
+    this.isLoggedIn = false,
+    this.onLoginSuccess,
+  });
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -10,6 +20,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final cartService = CartService.instance;
+  bool _localIsLoggedIn = false;
 
   @override
   void initState() {
@@ -27,10 +38,79 @@ class _CartScreenState extends State<CartScreen> {
     if (mounted) setState(() {});
   }
 
+  void _goToCheckout() {
+    final itemsPurchased = List<CartItem>.from(cartService.items);
+    final subtotal = cartService.totalAmount;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          items: itemsPurchased,
+          subtotal: subtotal,
+        ),
+      ),
+    );
+  }
+
+  void _handleCheckout() {
+    final hasSession = widget.isLoggedIn || _localIsLoggedIn;
+
+    if (!hasSession) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Inicio de sesión requerido', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text(
+            'Debes iniciar sesión para procesar tu compra y asociar el pedido a tu cuenta.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F2546),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LoginScreen(
+                      onLoginSuccess: (user) {
+                        if (widget.onLoginSuccess != null) {
+                          widget.onLoginSuccess!(user);
+                        }
+                        if (mounted) {
+                          setState(() {
+                            _localIsLoggedIn = true;
+                          });
+                        }
+                        Navigator.pop(context);
+                        _goToCheckout();
+                      },
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Iniciar Sesión', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _goToCheckout();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // CAMBIO AQUÍ: Color azul marino correspondiente al catálogo
-    const primaryColor = Color(0xFF0F2546); 
+    const primaryColor = Color(0xFF0F2546);
     const accentColor = Color(0xFFFF4B3E);
 
     return Scaffold(
@@ -169,14 +249,7 @@ class _CartScreenState extends State<CartScreen> {
                             backgroundColor: accentColor,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('¡Pedido enviado a procesar!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          },
+                          onPressed: _handleCheckout,
                           child: const Text(
                             'PROCESAR COMPRA',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
