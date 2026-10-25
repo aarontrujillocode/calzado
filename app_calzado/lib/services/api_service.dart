@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../models/product_model.dart'; // Asegúrate de que el nombre coincida con tu archivo en lib/models/
+import '../models/product_model.dart';
+import '../models/order_model.dart'; // <--- 1. Importación necesaria para getOrders
 
 class ApiService {
   static const String baseUrl = 'http://127.0.0.1/calzado/api.php';
@@ -23,6 +24,27 @@ class ApiService {
       return [];
     } catch (e) {
       if (kDebugMode) print('Error en getProducts: $e');
+      return [];
+    }
+  }
+
+  // --- OBTENER HISTORIAL DE PEDIDOS DESDE MYSQL ---
+  static Future<List<OrderModel>> getOrders(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl?action=get_orders&usuario_id=$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          List<dynamic> list = data['pedidos'];
+          return list.map((item) => OrderModel.fromJson(item)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      if (kDebugMode) print('Error en getOrders: $e');
       return [];
     }
   }
@@ -171,6 +193,39 @@ class ApiService {
       return false;
     } catch (e) {
       if (kDebugMode) print('Error en deleteAddress: $e');
+      return false;
+    }
+  }
+
+  // --- CREAR PEDIDO Y DESCONTAR STOCK EN MYSQL ---
+  static Future<bool> createOrder({
+    required int usuarioId,
+    required double total,
+    required List<dynamic> items,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=create_order'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'usuario_id': usuarioId,
+          'total': total,
+          'items': items.map((item) => {
+            'producto_id': item.product.id,
+            'cantidad': item.cantidad,
+            'precio': item.product.precio,
+            'talla': item.talla,
+          }).toList(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error en createOrder: $e');
       return false;
     }
   }

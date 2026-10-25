@@ -37,4 +37,19 @@ class Product {
       tallas: json['tallas']?.toString() ?? '',
     );
   }
+
+  // Método toJson agregado para solucionar el error de compilación
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'precio': precio,
+      'imagen': imagen,
+      'subcategoria': subcategoria,
+      'categoria': categoria,
+      'stock_total': stockTotal,
+      'tallas': tallas,
+    };
+  }
 }

@@ -31,7 +31,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   void initState() {
     super.initState();
-    _futureProducts = ApiService.getProducts();
+    _loadProducts();
+  }
+
+  // Método para refrescar la lista de productos desde la API y actualizar la UI
+  void _loadProducts() {
+    setState(() {
+      _futureProducts = ApiService.getProducts();
+    });
   }
 
   @override
@@ -59,8 +66,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   // BOTÓN DE FAVORITOS
                   IconButton(
                     icon: const Icon(Icons.favorite_outline, color: Colors.white, size: 24),
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => FavoritesScreen(
@@ -70,6 +77,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           ),
                         ),
                       );
+                      _loadProducts();
                     },
                   ),
                   IconButton(
@@ -85,16 +93,19 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 24),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              // Al ir al carrito pasamos el usuario actual para no perder el ID real en el checkout
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => CartScreen(
                                     isLoggedIn: widget.isLoggedIn,
+                                    currentUser: widget.currentUser, // <--- AQUÍ PASAMOS EL USUARIO ACTUAL
                                     onLoginSuccess: widget.onLoginSuccess,
                                   ),
                                 ),
                               );
+                              _loadProducts();
                             },
                           ),
                           if (count > 0)
@@ -262,8 +273,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                   : product.subcategoria.toUpperCase();
 
                               return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
+                                onTap: () async {
+                                  await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ProductDetailScreen(
@@ -274,6 +285,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                       ),
                                     ),
                                   );
+                                  _loadProducts();
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(

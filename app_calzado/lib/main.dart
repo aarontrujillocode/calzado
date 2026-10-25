@@ -5,6 +5,7 @@ import 'screens/favorites/favorites_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_screen.dart';
 import 'package:app_calzado/models/user_model.dart';
+import 'package:app_calzado/services/orders_service.dart'; // <--- Importante para cargar pedidos al iniciar sesión
 
 void main() {
   runApp(const ShoeStoreApp());
@@ -51,6 +52,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       currentUser = user;
       isLoggedIn = true;
     });
+    // Descarga los pedidos de este usuario desde MySQL apenas inicia sesión
+    OrdersService.instance.fetchOrders(user.id);
   }
 
   @override
@@ -79,6 +82,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   currentUser = null;
                   isLoggedIn = false;
                 });
+                OrdersService.instance.clearOrders(); // Limpia los pedidos al cerrar sesión
               },
               onProfileUpdated: (updatedUser) {
                 setState(() {

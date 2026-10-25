@@ -7,11 +7,13 @@ import 'package:app_calzado/models/user_model.dart';
 
 class CartScreen extends StatefulWidget {
   final bool isLoggedIn;
+  final UserModel? currentUser;
   final void Function(UserModel)? onLoginSuccess;
 
   const CartScreen({
     super.key,
     this.isLoggedIn = false,
+    this.currentUser,
     this.onLoginSuccess,
   });
 
@@ -22,11 +24,13 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   final cartService = CartService.instance;
   bool _localIsLoggedIn = false;
+  UserModel? _localUser;
 
   @override
   void initState() {
     super.initState();
     cartService.addListener(_onCartChanged);
+    _localUser = widget.currentUser;
   }
 
   @override
@@ -43,19 +47,23 @@ class _CartScreenState extends State<CartScreen> {
     final itemsPurchased = List<CartItem>.from(cartService.items);
     final subtotal = cartService.totalAmount;
 
+    // Tomamos el usuario actual o el que recién inició sesión
+    final activeUser = _localUser ?? widget.currentUser;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CheckoutScreen(
           items: itemsPurchased,
           subtotal: subtotal,
+          currentUser: activeUser, // <--- Enviamos el usuario real al Checkout
         ),
       ),
     );
   }
 
   void _handleCheckout() {
-    final hasSession = widget.isLoggedIn || _localIsLoggedIn;
+    final hasSession = widget.isLoggedIn || _localIsLoggedIn || (_localUser != null);
 
     if (!hasSession) {
       showDialog(
@@ -90,10 +98,11 @@ class _CartScreenState extends State<CartScreen> {
                         if (mounted) {
                           setState(() {
                             _localIsLoggedIn = true;
+                            _localUser = user; // <--- Guardamos el usuario autenticado aquí
                           });
                         }
                         Navigator.pop(context);
-                        _goToCheckout();
+                        _goToCheckout(); // <--- Continuamos con el pago enviando este usuario
                       },
                     ),
                   ),

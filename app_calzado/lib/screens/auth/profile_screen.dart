@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
+import '../../services/orders_service.dart';
 import 'edit_profile_screen.dart';
-import 'addresses_screen.dart'; // Asegúrate de que esta ruta coincida con la ubicación real de tu archivo
+import 'addresses_screen.dart';
+import 'orders_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserModel? user;
@@ -91,11 +93,16 @@ class ProfileScreen extends StatelessWidget {
                     const Divider(color: Colors.white24, height: 1),
                     const SizedBox(height: 12),
 
-                    // Contadores de Pedidos y Favoritos
+                    // Contadores dinámicos
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildCounter('PEDIDOS', user?.pedidos ?? 0),
+                        ListenableBuilder(
+                          listenable: OrdersService.instance,
+                          builder: (context, _) {
+                            return _buildCounter('PEDIDOS', OrdersService.instance.orderCount);
+                          },
+                        ),
                         Container(height: 30, width: 1, color: Colors.white24),
                         _buildCounter('FAVORITOS', user?.favoritos ?? 0),
                       ],
@@ -148,7 +155,16 @@ class ProfileScreen extends StatelessWidget {
                 icon: Icons.shopping_bag_outlined,
                 title: 'Mis pedidos',
                 subtitle: 'Consulta el estado de tus pedidos',
-                onTap: () {},
+                onTap: () {
+                  if (user != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrdersScreen(currentUser: user!), // <--- Pasamos el usuario real
+                      ),
+                    );
+                  }
+                },
               ),
               _buildOptionTile(
                 icon: Icons.help_outline,
@@ -161,7 +177,10 @@ class ProfileScreen extends StatelessWidget {
 
               // Botón Cerrar Sesión
               TextButton(
-                onPressed: onLogout,
+                onPressed: () {
+                  OrdersService.instance.clearOrders();
+                  onLogout();
+                },
                 child: const Text(
                   'CERRAR SESIÓN',
                   style: TextStyle(

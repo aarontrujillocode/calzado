@@ -107,20 +107,21 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                               return Stack(
                                 alignment: Alignment.topRight,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 24),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => CartScreen(
-                                            isLoggedIn: widget.isLoggedIn,
-                                            onLoginSuccess: widget.onLoginSuccess,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+IconButton(
+  icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 24),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartScreen(
+          isLoggedIn: widget.isLoggedIn,
+          currentUser: widget.currentUser, // <--- ¡Añade esta línea aquí!
+          onLoginSuccess: widget.onLoginSuccess,
+        ),
+      ),
+    );
+  },
+),
                                   if (count > 0)
                                     Positioned(
                                       right: 6,

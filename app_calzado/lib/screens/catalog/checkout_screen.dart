@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:app_calzado/models/cart_item_model.dart';
 import 'package:app_calzado/services/cart_service.dart';
-import 'package:app_calzado/screens/auth/order_success_screen.dart'; // <--- RUTA CORREGIDA AQUÍ
+import 'package:app_calzado/screens/auth/order_success_screen.dart';
+import 'package:app_calzado/services/api_service.dart';
+import 'package:app_calzado/services/orders_service.dart'; // <--- Importante para actualizar los pedidos
+import 'package:app_calzado/models/user_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<CartItem> items;
   final double subtotal;
+  final UserModel? currentUser;
 
   const CheckoutScreen({
     super.key,
     required this.items,
     required this.subtotal,
+    this.currentUser,
   });
 
   @override
@@ -20,30 +25,54 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String _selectedPaymentMethod = 'card';
   bool _isProcessing = false;
-  
-  // CORRECCIÓN 1: Se usa 'final' en lugar de 'const' fuera de static
   final double shippingFee = 10.0;
 
   void _confirmPayment() async {
     setState(() => _isProcessing = true);
 
-    // Simulación de procesamiento de pago
-    await Future.delayed(const Duration(seconds: 2));
+    final double totalCalculado = widget.subtotal + shippingFee;
+    
+    // Obtenemos el ID real del usuario logueado (si es null, usa 1 por seguridad)
+    final int usuarioId = widget.currentUser?.id ?? 1; 
 
+    // 1. Enviar pedido al servidor PHP para registrar en MySQL y descontar stock
+    bool exitoBD = await ApiService.createOrder(
+      usuarioId: usuarioId,
+      total: totalCalculado,
+      items: widget.items,
+    );
+
+    if (!exitoBD) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al procesar la compra en el servidor'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    // 2. Sincronizar el historial de pedidos de este usuario inmediatamente desde MySQL
+    await OrdersService.instance.fetchOrders(usuarioId);
+
+    // 3. Vaciar el carrito de compras
     CartService.instance.clearCart();
 
     if (!mounted) return;
 
+    // 4. Navegar a la pantalla de éxito
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => OrderSuccessScreen(
-          orderCode: 'STP-0248',
+          orderCode: 'STP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
           items: widget.items,
           subtotal: widget.subtotal,
           shippingFee: shippingFee,
           discount: 0.0,
-          total: widget.subtotal + shippingFee,
+          total: totalCalculado,
         ),
       ),
     );
