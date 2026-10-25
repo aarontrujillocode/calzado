@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/user_model.dart';
+import '../admin/admin_main_layout.dart'; // <--- Importante para la ruta del panel admin
 
 class LoginScreen extends StatefulWidget {
-  final Function(UserModel) onLoginSuccess; // Callback actualizado
+  final Function(UserModel)? onLoginSuccess; // Hecho opcional para mayor flexibilidad
 
-  const LoginScreen({super.key, required this.onLoginSuccess});
+  const LoginScreen({super.key, this.onLoginSuccess});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -52,9 +53,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result['status'] == 'success') {
       if (isLogin) {
-        // Mapea la información entregada por el PHP y se la envía al MainLayoutScreen
         final user = UserModel.fromJson(result['user']);
-        widget.onLoginSuccess(user);
+
+        // --- VERIFICACIÓN DE ROL ---
+        if (user.rol == 'admin') {
+          // Si es administrador, lo mandamos directo al panel de control
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminMainLayout(adminUser: user),
+            ),
+          );
+        } else {
+          // Si es cliente regular, ejecutamos el callback normal de la tienda
+          if (widget.onLoginSuccess != null) {
+            widget.onLoginSuccess!(user);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('¡Bienvenido, ${user.nombre}!')),
+            );
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -4,8 +4,9 @@ import 'screens/catalog/catalog_screen.dart';
 import 'screens/favorites/favorites_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_screen.dart';
+import 'screens/admin/admin_main_layout.dart'; // <--- 1. Importa el layout de administrador
 import 'package:app_calzado/models/user_model.dart';
-import 'package:app_calzado/services/orders_service.dart'; // <--- Importante para cargar pedidos al iniciar sesión
+import 'package:app_calzado/services/orders_service.dart';
 
 void main() {
   runApp(const ShoeStoreApp());
@@ -48,11 +49,22 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   UserModel? currentUser;
 
   void _updateUserSession(UserModel user) {
+    // --- 2. VERIFICACIÓN DE ROL DE ADMINISTRADOR ---
+    if (user.rol == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AdminMainLayout(adminUser: user),
+        ),
+      );
+      return;
+    }
+
+    // Si es cliente regular, continúa con la lógica normal de la tienda
     setState(() {
       currentUser = user;
       isLoggedIn = true;
     });
-    // Descarga los pedidos de este usuario desde MySQL apenas inicia sesión
     OrdersService.instance.fetchOrders(user.id);
   }
 
@@ -82,7 +94,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   currentUser = null;
                   isLoggedIn = false;
                 });
-                OrdersService.instance.clearOrders(); // Limpia los pedidos al cerrar sesión
+                OrdersService.instance.clearOrders();
               },
               onProfileUpdated: (updatedUser) {
                 setState(() {

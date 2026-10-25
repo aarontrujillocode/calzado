@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/product_model.dart';
-import '../models/order_model.dart'; // <--- 1. Importación necesaria para getOrders
+import '../models/order_model.dart';
 
 class ApiService {
   static const String baseUrl = 'http://127.0.0.1/calzado/api.php';
@@ -227,6 +227,89 @@ class ApiService {
     } catch (e) {
       if (kDebugMode) print('Error en createOrder: $e');
       return false;
+    }
+  }
+
+  // --- GESTIÓN DE ADMINISTRADOR: OBTENER TODOS LOS PEDIDOS ---
+  static Future<List<dynamic>> getAdminOrders() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl?action=get_admin_orders'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          return data['pedidos'];
+        }
+      }
+      return [];
+    } catch (e) {
+      if (kDebugMode) print('Error en getAdminOrders: $e');
+      return [];
+    }
+  }
+
+  // --- GESTIÓN DE ADMINISTRADOR: ACTUALIZAR ESTADO DE PEDIDO ---
+  static Future<bool> updateOrderStatus(int orderId, String nuevoEstado) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=update_order_status'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'pedido_id': orderId,
+          'estado': nuevoEstado,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error en updateOrderStatus: $e');
+      return false;
+    }
+  }
+
+  // --- GESTIÓN DE ADMINISTRADOR: OBTENER TODOS LOS CLIENTES ---
+  static Future<List<dynamic>> getAdminUsers() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl?action=get_admin_users'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          return data['usuarios'];
+        }
+      }
+      return [];
+    } catch (e) {
+      if (kDebugMode) print('Error en getAdminUsers: $e');
+      return [];
+    }
+  }
+
+  // --- GESTIÓN DE ADMINISTRADOR: OBTENER REPORTE DE VENTAS ---
+  static Future<Map<String, dynamic>> getAdminSales() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl?action=get_admin_sales'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          return data;
+        }
+      }
+      return {'total_ingresos': 0.0, 'total_ventas': 0, 'ventas': []};
+    } catch (e) {
+      if (kDebugMode) print('Error en getAdminSales: $e');
+      return {'total_ingresos': 0.0, 'total_ventas': 0, 'ventas': []};
     }
   }
 }

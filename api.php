@@ -337,6 +337,114 @@ if ($action === 'login') {
     }
     exit();
 
+// --- OBTENER TODOS LOS PEDIDOS PARA EL PANEL DE ADMINISTRACIÓN ---
+} else if ($action === 'get_admin_orders') {
+    $sql = "SELECT p.id, p.fecha, p.total, p.estado, u.nombre as cliente_nombre, u.email as cliente_email 
+            FROM pedidos p 
+            JOIN usuarios u ON p.usuario_id = u.id 
+            ORDER BY p.fecha DESC";
+    
+    $result = $conn->query($sql);
+    $pedidos = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $pedidos[] = [
+                "id" => (int)$row["id"],
+                "fecha" => $row["fecha"],
+                "total" => (float)$row["total"],
+                "estado" => $row["estado"],
+                "cliente_nombre" => $row["cliente_nombre"],
+                "cliente_email" => $row["cliente_email"]
+            ];
+        }
+    }
+
+    echo json_encode(["status" => "success", "pedidos" => $pedidos]);
+    exit();
+
+// --- ACTUALIZAR EL ESTADO DE UN PEDIDO (ADMIN) ---
+} else if ($action === 'update_order_status') {
+    $pedido_id = $data['pedido_id'] ?? null;
+    $estado = trim($data['estado'] ?? '');
+
+    if (empty($pedido_id) || empty($estado)) {
+        echo json_encode(["status" => "error", "message" => "Datos incompletos"]);
+        exit();
+    }
+
+    $stmt = $conn->prepare("UPDATE pedidos SET estado = ? WHERE id = ?");
+    $stmt->bind_param("si", $estado, $pedido_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Estado actualizado correctamente"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al actualizar el estado"]);
+    }
+    $stmt->close();
+    exit();
+
+// --- OBTENER RESUMEN DE VENTAS (ADMIN) ---
+} else if ($action === 'get_admin_sales') {
+    $sql = "SELECT p.id, p.fecha, p.total, p.estado, u.nombre as cliente_nombre 
+            FROM pedidos p 
+            JOIN usuarios u ON p.usuario_id = u.id 
+            ORDER BY p.fecha DESC";
+    
+    $result = $conn->query($sql);
+    $ventas = [];
+    $totalIngresos = 0;
+    $totalVentas = 0;
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $monto = (float)$row["total"];
+            $totalIngresos += $monto;
+            $totalVentas++;
+            $ventas[] = [
+                "id" => (int)$row["id"],
+                "fecha" => $row["fecha"],
+                "total" => $monto,
+                "estado" => $row["estado"],
+                "cliente_nombre" => $row["cliente_nombre"]
+            ];
+        }
+    }
+
+    echo json_encode([
+        "status" => "success", 
+        "total_ingresos" => $totalIngresos,
+        "total_ventas" => $totalVentas,
+        "ventas" => $ventas
+    ]);
+    exit();
+
+// --- OBTENER TODOS LOS USUARIOS Y CLIENTES (ADMIN) ---
+} else if ($action === 'get_admin_users') {
+    $sql = "SELECT id, nombre, email, telefono, fecha_nacimiento, rol, fecha_registro 
+            FROM usuarios 
+            ORDER BY id DESC";
+    
+    $result = $conn->query($sql);
+    $usuarios = [];
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $usuarios[] = [
+                "id" => (int)$row["id"],
+                "nombre" => $row["nombre"],
+                "email" => $row["email"],
+                "telefono" => $row["telefono"] ?? '',
+                "fecha_nacimiento" => $row["fecha_nacimiento"] ?? '',
+                "rol" => $row["rol"],
+                "fecha_registro" => $row["fecha_registro"]
+            ];
+        }
+    }
+
+    echo json_encode(["status" => "success", "usuarios" => $usuarios]);
+    exit();
+
 } else {
     echo json_encode(["status" => "error", "message" => "Acción no válida"]);
 }
