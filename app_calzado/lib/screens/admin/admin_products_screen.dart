@@ -24,6 +24,195 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
     });
   }
 
+  // Diálogo para Agregar o Editar Producto
+  void _showProductDialog(BuildContext context, {Product? productToEdit}) {
+    final _formKey = GlobalKey<FormState>();
+    final bool isEditing = productToEdit != null;
+
+    final TextEditingController _nombreController =
+        TextEditingController(text: isEditing ? productToEdit.nombre : '');
+    final TextEditingController _descripcionController =
+        TextEditingController(text: isEditing ? productToEdit.descripcion : '');
+    final TextEditingController _precioController =
+        TextEditingController(text: isEditing ? productToEdit.precio.toString() : '');
+    final TextEditingController _imagenController =
+        TextEditingController(text: isEditing ? productToEdit.imagen : '');
+    final TextEditingController _stockController =
+        TextEditingController(text: isEditing ? productToEdit.stockTotal.toString() : '10');
+    final TextEditingController _tallasController =
+        TextEditingController(text: isEditing ? productToEdit.tallas : '40,41,42');
+
+    String _categoriaSeleccionada =
+        isEditing ? productToEdit.categoria : 'Hombres';
+    String _subcategoriaSeleccionada =
+        isEditing ? productToEdit.subcategoria : 'Zapatillas';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(
+                isEditing ? 'Editar Producto' : 'Agregar Nuevo Producto',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F2042),
+                ),
+              ),
+              content: SizedBox(
+                width: 450,
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: _nombreController,
+                          decoration: const InputDecoration(labelText: 'Nombre del calzado'),
+                          validator: (value) => value!.isEmpty ? 'Campo obligatorio' : null,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _descripcionController,
+                          decoration: const InputDecoration(labelText: 'Descripción'),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _precioController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Precio (S/)'),
+                          validator: (value) => value!.isEmpty ? 'Campo obligatorio' : null,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _imagenController,
+                          decoration: const InputDecoration(labelText: 'URL de la imagen (Ej. Unsplash)'),
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String>(
+                          value: _categoriaSeleccionada,
+                          decoration: const InputDecoration(labelText: 'Categoría'),
+                          items: ['Hombres', 'Mujeres', 'Infantil']
+                              .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                              .toList(),
+                          onChanged: (value) {
+                            setStateDialog(() {
+                              _categoriaSeleccionada = value!;
+                              if (_categoriaSeleccionada == 'Hombres') _subcategoriaSeleccionada = 'Zapatillas';
+                              if (_categoriaSeleccionada == 'Mujeres') _subcategoriaSeleccionada = 'Tacos';
+                              if (_categoriaSeleccionada == 'Infantil') _subcategoriaSeleccionada = 'Zapatillas';
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _stockController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Stock Total'),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _tallasController,
+                          decoration: const InputDecoration(labelText: 'Tallas separadas por coma (Ej. 38,39,40)'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate()) {
+                      Map<String, dynamic> productData = {
+                        if (isEditing) 'id': productToEdit.id,
+                        'nombre': _nombreController.text,
+                        'descripcion': _descripcionController.text,
+                        'precio': double.tryParse(_precioController.text) ?? 0.0,
+                        'imagen': _imagenController.text,
+                        'categoria': _categoriaSeleccionada,
+                        'subcategoria': _subcategoriaSeleccionada,
+                        'stock_total': int.tryParse(_stockController.text) ?? 10,
+                        'tallas': _tallasController.text,
+                        'subcategoria_id': _categoriaSeleccionada == 'Hombres' ? 1 : (_categoriaSeleccionada == 'Mujeres' ? 4 : 7),
+                      };
+
+                      bool exito = isEditing
+                          ? await ApiService.updateProduct(productData)
+                          : await ApiService.addProduct(productData);
+
+                      Navigator.pop(context);
+
+                      if (exito) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isEditing ? '¡Producto actualizado con éxito!' : '¡Producto agregado con éxito!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        _loadProducts();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Error al guardar en la base de datos'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(isEditing ? 'Actualizar' : 'Guardar Producto', style: const TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Confirmar y eliminar producto
+  void _confirmDelete(BuildContext context, Product product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar Producto'),
+        content: Text('¿Estás seguro de eliminar "${product.nombre}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+              bool exito = await ApiService.deleteProduct(product.id);
+              if (exito) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Producto eliminado correctamente'), backgroundColor: Colors.green),
+                );
+                _loadProducts();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Error al eliminar producto'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,6 +232,12 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
             tooltip: 'Actualizar lista',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showProductDialog(context),
+        backgroundColor: const Color(0xFF2563EB),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Agregar Producto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: FutureBuilder<List<Product>>(
         future: _productsFuture,
@@ -143,40 +338,79 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                                 ),
                               ),
                             ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  'S/ ${product.precio.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: Color(0xFF2563EB),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: product.stockTotal > 0
-                                        ? Colors.green.shade50
-                                        : Colors.red.shade50,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'Stock: ${product.stockTotal}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: product.stockTotal > 0
-                                          ? Colors.green.shade700
-                                          : Colors.red.shade700,
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'S/ ${product.precio.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Color(0xFF2563EB),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: product.stockTotal > 0
+                                            ? Colors.green.shade50
+                                            : Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Stock: ${product.stockTotal}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: product.stockTotal > 0
+                                              ? Colors.green.shade700
+                                              : Colors.red.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 8),
+                                // --- MENÚ DE OPCIONES (EDITAR / ELIMINAR) ---
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert, color: Color(0xFF0F2042)),
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      _showProductDialog(context, productToEdit: product);
+                                    } else if (value == 'delete') {
+                                      _confirmDelete(context, product);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit, color: Colors.blue, size: 18),
+                                          SizedBox(width: 8),
+                                          Text('Editar'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete, color: Colors.red, size: 18),
+                                          SizedBox(width: 8),
+                                          Text('Eliminar'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

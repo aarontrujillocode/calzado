@@ -222,7 +222,6 @@ if ($action === 'login') {
 
     echo json_encode(["status" => "success", "productos" => $productos]);
 
-// --- OBTENER HISTORIAL DE PEDIDOS POR USUARIO ---
 } else if ($action === 'get_orders') {
     $usuario_id = $_GET['usuario_id'] ?? null;
     if (empty($usuario_id)) {
@@ -240,7 +239,6 @@ if ($action === 'login') {
         $order['id'] = (string)$order['id'];
         $order['total'] = (float)$order['total'];
         
-        // Obtener los productos/detalles de cada pedido
         $detalleStmt = $conn->prepare("
             SELECT dp.cantidad, dp.precio_unitario as precio, dp.talla, 
                    p.id as producto_id, p.nombre, p.imagen, p.subcategoria, p.categoria, p.stock_total, p.tallas
@@ -279,7 +277,6 @@ if ($action === 'login') {
     echo json_encode(["status" => "success", "pedidos" => $pedidos]);
     exit();
 
-// --- ACCIÓN PARA CREAR PEDIDO Y DESCONTAR STOCK ---
 } else if ($action === 'create_order') {
     $usuario_id = $data['usuario_id'] ?? null;
     $total = $data['total'] ?? 0;
@@ -293,14 +290,12 @@ if ($action === 'login') {
     $conn->begin_transaction();
 
     try {
-        // 1. Insertar el pedido principal
         $stmt = $conn->prepare("INSERT INTO pedidos (usuario_id, total, estado) VALUES (?, ?, 'En preparación')");
         $stmt->bind_param("id", $usuario_id, $total);
         $stmt->execute();
         $pedido_id = $stmt->insert_id;
         $stmt->close();
 
-        // 2. Insertar detalles y descontar el stock de cada producto
         foreach ($items as $item) {
             $producto_id = $item['producto_id'] ?? null;
             $cantidad = $item['cantidad'] ?? 1;
@@ -311,13 +306,11 @@ if ($action === 'login') {
                 throw new Exception("ID de producto inválido en el carrito");
             }
 
-            // Insertar detalle del pedido
             $stmtDetalle = $conn->prepare("INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario, talla) VALUES (?, ?, ?, ?, ?)");
             $stmtDetalle->bind_param("iiids", $pedido_id, $producto_id, $cantidad, $precio, $talla);
             $stmtDetalle->execute();
             $stmtDetalle->close();
 
-            // Descontar stock total de la tabla productos
             $stmtStock = $conn->prepare("UPDATE productos SET stock_total = GREATEST(0, stock_total - ?) WHERE id = ?");
             $stmtStock->bind_param("ii", $cantidad, $producto_id);
             $stmtStock->execute();
@@ -337,7 +330,6 @@ if ($action === 'login') {
     }
     exit();
 
-// --- OBTENER TODOS LOS PEDIDOS PARA EL PANEL DE ADMINISTRACIÓN ---
 } else if ($action === 'get_admin_orders') {
     $sql = "SELECT p.id, p.fecha, p.total, p.estado, u.nombre as cliente_nombre, u.email as cliente_email 
             FROM pedidos p 
@@ -363,7 +355,6 @@ if ($action === 'login') {
     echo json_encode(["status" => "success", "pedidos" => $pedidos]);
     exit();
 
-// --- ACTUALIZAR EL ESTADO DE UN PEDIDO (ADMIN) ---
 } else if ($action === 'update_order_status') {
     $pedido_id = $data['pedido_id'] ?? null;
     $estado = trim($data['estado'] ?? '');
@@ -384,7 +375,6 @@ if ($action === 'login') {
     $stmt->close();
     exit();
 
-// --- OBTENER RESUMEN DE VENTAS (ADMIN) ---
 } else if ($action === 'get_admin_sales') {
     $sql = "SELECT p.id, p.fecha, p.total, p.estado, u.nombre as cliente_nombre 
             FROM pedidos p 
@@ -419,7 +409,6 @@ if ($action === 'login') {
     ]);
     exit();
 
-// --- OBTENER TODOS LOS USUARIOS Y CLIENTES (ADMIN) ---
 } else if ($action === 'get_admin_users') {
     $sql = "SELECT id, nombre, email, telefono, fecha_nacimiento, rol, fecha_registro 
             FROM usuarios 
@@ -443,6 +432,79 @@ if ($action === 'login') {
     }
 
     echo json_encode(["status" => "success", "usuarios" => $usuarios]);
+    exit();
+
+} else if ($action === 'add_product') {
+    $nombre          = trim($data['nombre'] ?? '');
+    $descripcion     = trim($data['descripcion'] ?? '');
+    $precio          = (float)($data['precio'] ?? 0);
+    $imagen          = trim($data['imagen'] ?? '');
+    $categoria       = trim($data['categoria'] ?? 'Hombres');
+    $subcategoria    = trim($data['subcategoria'] ?? 'Zapatillas');
+    $stock_total     = (int)($data['stock_total'] ?? 10);
+    $tallas          = trim($data['tallas'] ?? '40,41,42');
+    $subcategoria_id = (int)($data['subcategoria_id'] ?? 1);
+
+    if (empty($nombre) || $precio <= 0) {
+        echo json_encode(["status" => "error", "message" => "El nombre y el precio son obligatorios"]);
+        exit();
+    }
+
+    $stmt = $conn->prepare("INSERT INTO productos (subcategoria_id, nombre, descripcion, precio, imagen, subcategoria, categoria, stock_total, tallas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("issdsssis", $subcategoria_id, $nombre, $descripcion, $precio, $imagen, $subcategoria, $categoria, $stock_total, $tallas);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Producto agregado correctamente"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al registrar el producto"]);
+    }
+    $stmt->close();
+    exit();
+
+} else if ($action === 'update_product') {
+    $id              = (int)($data['id'] ?? 0);
+    $nombre          = trim($data['nombre'] ?? '');
+    $descripcion     = trim($data['descripcion'] ?? '');
+    $precio          = (float)($data['precio'] ?? 0);
+    $imagen          = trim($data['imagen'] ?? '');
+    $categoria       = trim($data['categoria'] ?? 'Hombres');
+    $subcategoria    = trim($data['subcategoria'] ?? 'Zapatillas');
+    $stock_total     = (int)($data['stock_total'] ?? 10);
+    $tallas          = trim($data['tallas'] ?? '40,41,42');
+    $subcategoria_id = (int)($data['subcategoria_id'] ?? 1);
+
+    if ($id <= 0 || empty($nombre) || $precio <= 0) {
+        echo json_encode(["status" => "error", "message" => "ID, nombre y precio obligatorios"]);
+        exit();
+    }
+
+    $stmt = $conn->prepare("UPDATE productos SET subcategoria_id = ?, nombre = ?, descripcion = ?, precio = ?, imagen = ?, subcategoria = ?, categoria = ?, stock_total = ?, tallas = ? WHERE id = ?");
+    $stmt->bind_param("issdsssisi", $subcategoria_id, $nombre, $descripcion, $precio, $imagen, $subcategoria, $categoria, $stock_total, $tallas, $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Producto actualizado correctamente"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al actualizar el producto"]);
+    }
+    $stmt->close();
+    exit();
+
+} else if ($action === 'delete_product') {
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) {
+        echo json_encode(["status" => "error", "message" => "ID de producto requerido"]);
+        exit();
+    }
+
+    $stmt = $conn->prepare("DELETE FROM productos WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Producto eliminado correctamente"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al eliminar el producto"]);
+    }
+    $stmt->close();
     exit();
 
 } else {

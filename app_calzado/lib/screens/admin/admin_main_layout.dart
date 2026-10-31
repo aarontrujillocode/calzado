@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
+import '../auth/login_screen.dart'; // Asegúrate de que la ruta a tu pantalla de login sea correcta
 import 'admin_dashboard_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_products_screen.dart';
-import 'admin_clients_screen.dart'; // <--- Importado el módulo de clientes
-import 'admin_sales_screen.dart';   // <--- Importado el módulo de ventas
+import 'admin_clients_screen.dart';
+import 'admin_sales_screen.dart';
 
 class AdminMainLayout extends StatefulWidget {
   final UserModel? adminUser;
@@ -111,6 +112,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
             ),
           ),
         ),
+        // --- SECCIÓN INFERIOR: PERFIL Y BOTÓN DE CERRAR SESIÓN ---
         Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
@@ -142,6 +144,23 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
                     ),
                   ],
                 ),
+              ),
+              // Botón de Cerrar Sesión
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.redAccent, size: 22),
+                tooltip: 'Cerrar Sesión',
+                onPressed: () {
+                  // Opcional: Cerrar el Drawer si está en pantalla pequeña
+                  if (isDrawer) {
+                    Navigator.pop(context);
+                  }
+                  // Redirigir al Login y limpiar el historial de navegación
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
               ),
             ],
           ),

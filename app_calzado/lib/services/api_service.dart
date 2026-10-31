@@ -312,4 +312,64 @@ class ApiService {
       return {'total_ingresos': 0.0, 'total_ventas': 0, 'ventas': []};
     }
   }
+
+  // --- GESTIÓN DE ADMINISTRADOR: CREAR PRODUCTO ---
+  static Future<bool> addProduct(Map<String, dynamic> productData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=add_product'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(productData),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error en addProduct: $e');
+      return false;
+    }
+  }
+
+  // --- GESTIÓN DE ADMINISTRADOR: ACTUALIZAR PRODUCTO ---
+  static Future<bool> updateProduct(Map<String, dynamic> productData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=update_product'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(productData),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error en updateProduct: $e');
+      return false;
+    }
+  }
+
+  // --- GESTIÓN DE ADMINISTRADOR: ELIMINAR PRODUCTO ---
+  static Future<bool> deleteProduct(int productId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=delete_product'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id': productId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error en deleteProduct: $e');
+      return false;
+    }
+  }
 }
