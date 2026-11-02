@@ -507,6 +507,82 @@ if ($action === 'login') {
     $stmt->close();
     exit();
 
+} else if ($action === 'delete_user') {
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) {
+        echo json_encode(["status" => "error", "message" => "ID de usuario requerido"]);
+        exit();
+    }
+
+    // Validación de seguridad: Asegurar que no se borren cuentas de administrador
+    $checkStmt = $conn->prepare("SELECT rol FROM usuarios WHERE id = ?");
+    $checkStmt->bind_param("i", $id);
+    $checkStmt->execute();
+    $res = $checkStmt->get_result();
+    if ($user = $res->fetch_assoc()) {
+        if ($user['rol'] === 'admin' || $user['rol'] === 'administrador') {
+            echo json_encode(["status" => "error", "message" => "No se puede eliminar una cuenta de administrador"]);
+            exit();
+        }
+    }
+    $checkStmt->close();
+
+    $stmt = $conn->prepare("DELETE FROM usuarios WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Usuario eliminado correctamente"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Error al eliminar el usuario"]);
+    }
+    $stmt->close();
+    exit();
+
+} else if ($action === 'get_dashboard_stats') {
+    $sqlVentas = "SELECT SUM(total) as ventas_totales, COUNT(*) as total_pedidos FROM pedidos";
+    $resVentas = $conn->query($sqlVentas)->fetch_assoc();
+    $ventasTotales = (float)($resVentas['ventas_totales'] ?? 0);
+    $totalPedidos = (int)($resVentas['total_pedidos'] ?? 0);
+
+    $sqlClientes = "SELECT COUNT(*) as total_clientes FROM usuarios WHERE rol = 'cliente'";
+    $resClientes = $conn->query($sqlClientes)->fetch_assoc();
+    $totalClientes = (int)($resClientes['total_clientes'] ?? 0);
+
+    $sqlStock = "SELECT SUM(stock_total) as stock_total FROM productos";
+    $resStock = $conn->query($sqlStock)->fetch_assoc();
+    $totalStock = (int)($resStock['stock_total'] ?? 0);
+
+    $sqlCat = "SELECT p.subcategoria, SUM(dp.cantidad * dp.precio_unitario) as total_subcat 
+               FROM detalle_pedidos dp 
+               JOIN productos p ON dp.producto_id = p.id 
+               GROUP BY p.subcategoria";
+    $resCat = $conn->query($sqlCat);
+    $ventasPorSubcategoria = [];
+    $sumaTotalSubcat = 0;
+
+    while($row = $resCat->fetch_assoc()) {
+        $monto = (float)$row['total_subcat'];
+        $sumaTotalSubcat += $monto;
+        $ventasPorSubcategoria[] = [
+            'subcategoria' => $row['subcategoria'] ?? 'General',
+            'total' => $monto
+        ];
+    }
+
+    foreach($ventasPorSubcategoria as &$item) {
+        $item['porcentaje'] = $sumaTotalSubcat > 0 ? round(($item['total'] / $sumaTotalSubcat) * 100, 1) : 0;
+    }
+
+    echo json_encode([
+        "status" => "success",
+        "ventas_totales" => $ventasTotales,
+        "pedidos_totales" => $totalPedidos,
+        "clientes_totales" => $totalClientes,
+        "productos_stock" => $totalStock,
+        "ventas_por_subcategoria" => $ventasPorSubcategoria
+    ]);
+    exit();
+
 } else {
     echo json_encode(["status" => "error", "message" => "Acción no válida"]);
 }

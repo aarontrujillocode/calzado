@@ -372,4 +372,43 @@ class ApiService {
       return false;
     }
   }
+
+  // --- GESTIÓN DE ADMINISTRADOR: ESTADÍSTICAS DEL DASHBOARD ---
+  static Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl?action=get_dashboard_stats'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          return data;
+        }
+      }
+      return {};
+    } catch (e) {
+      if (kDebugMode) print('Error en getDashboardStats: $e');
+      return {};
+    }
+  }
+  // --- GESTIÓN DE ADMINISTRADOR: ELIMINAR USUARIO ---
+  static Future<bool> deleteUser(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=delete_user'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id': userId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('Error en deleteUser: $e');
+      return false;
+    }
+  }
 }

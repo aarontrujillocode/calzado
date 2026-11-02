@@ -59,7 +59,8 @@ class _AdminSalesScreenState extends State<AdminSalesScreen> {
           }
 
           final data = snapshot.data!;
-          final double totalIngresos = (data['total_ingresos'] ?? 0.0).toDouble();
+          final double totalIngresos =
+              (data['total_ingresos'] ?? 0.0).toDouble();
           final int totalVentas = data['total_ventas'] ?? 0;
           final List<dynamic> ventas = data['ventas'] ?? [];
 
@@ -68,7 +69,7 @@ class _AdminSalesScreenState extends State<AdminSalesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tarjetas de resumen métrico
+                // Tarjetas de resumen métrico con diseño responsivo seguro
                 Row(
                   children: [
                     Expanded(
@@ -153,7 +154,7 @@ class _AdminSalesScreenState extends State<AdminSalesScreen> {
                                     ),
                                   ),
                                   trailing: Text(
-                                    'S/ ${venta['total'].toStringAsFixed(2)}',
+                                    'S/ ${(venta['total'] as num).toStringAsFixed(2)}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
@@ -177,7 +178,7 @@ class _AdminSalesScreenState extends State<AdminSalesScreen> {
   Widget _buildMetricCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -192,35 +193,46 @@ class _AdminSalesScreenState extends State<AdminSalesScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 26),
           ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
+          const SizedBox(width: 12),
+          // Usamos Expanded para forzar a la columna a ajustarse al espacio restante de la tarjeta
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F2042),
+                const SizedBox(height: 4),
+                // Usamos FittedBox para que si el número es largo, se reduzca automáticamente sin desbordarse
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F2042),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

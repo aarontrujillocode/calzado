@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
-import '../auth/login_screen.dart'; // Asegúrate de que la ruta a tu pantalla de login sea correcta
+import '../auth/login_screen.dart'; 
 import 'admin_dashboard_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_products_screen.dart';
 import 'admin_clients_screen.dart';
 import 'admin_sales_screen.dart';
+import 'admin_settings_screen.dart';
 
 class AdminMainLayout extends StatefulWidget {
   final UserModel? adminUser;
@@ -25,15 +26,15 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     final bool isSmallScreen = screenWidth < 850;
 
     // Listado de pantallas del panel administrativo conectadas con MySQL
-    final List<Widget> adminPages = [
-      AdminDashboardScreen(adminUser: widget.adminUser),
-      const AdminProductsScreen(), // Índice 1: Productos
-      AdminOrdersScreen(),          // Índice 2: Pedidos
-      const AdminClientsScreen(),   // Índice 3: Clientes
-      const AdminSalesScreen(),     // Índice 4: Ventas
-      const Center(child: Text('Módulo de Promociones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-      const Center(child: Text('Configuración del Sistema', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-    ];
+final List<Widget> adminPages = [
+  AdminDashboardScreen(adminUser: widget.adminUser),
+  const AdminProductsScreen(), // Índice 1: Productos
+  AdminOrdersScreen(),          // Índice 2: Pedidos
+  const AdminClientsScreen(),   // Índice 3: Clientes
+  const AdminSalesScreen(),     // Índice 4: Ventas
+  const Center(child: Text('Módulo de Promociones', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+  AdminSettingsScreen(adminUser: widget.adminUser), // <-- CORREGIDO AQUÍ
+];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
