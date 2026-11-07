@@ -4,7 +4,7 @@ import 'screens/catalog/catalog_screen.dart';
 import 'screens/favorites/favorites_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_screen.dart';
-import 'screens/admin/admin_main_layout.dart'; // <--- 1. Importa el layout de administrador
+import 'screens/admin/admin_main_layout.dart';
 import 'package:app_calzado/models/user_model.dart';
 import 'package:app_calzado/services/orders_service.dart';
 
@@ -37,7 +37,9 @@ class ShoeStoreApp extends StatelessWidget {
 }
 
 class MainLayoutScreen extends StatefulWidget {
-  const MainLayoutScreen({super.key});
+  final UserModel? initialUser; // <--- Parámetro opcional para recibir el usuario tras cerrar sesión como admin
+
+  const MainLayoutScreen({super.key, this.initialUser});
 
   @override
   State<MainLayoutScreen> createState() => _MainLayoutScreenState();
@@ -45,11 +47,23 @@ class MainLayoutScreen extends StatefulWidget {
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _selectedIndex = 0;
-  bool isLoggedIn = false;
+  late bool isLoggedIn;
   UserModel? currentUser;
 
+  @override
+  void initState() {
+    super.initState();
+    // Inicializamos el estado basado en si viene un usuario previo
+    isLoggedIn = widget.initialUser != null;
+    currentUser = widget.initialUser;
+    if (isLoggedIn && currentUser != null) {
+      _selectedIndex = 3; // Lo posiciona directo en la pestaña "Cuenta"
+      OrdersService.instance.fetchOrders(currentUser!.id);
+    }
+  }
+
   void _updateUserSession(UserModel user) {
-    // --- 2. VERIFICACIÓN DE ROL DE ADMINISTRADOR ---
+    // --- VERIFICACIÓN DE ROL DE ADMINISTRADOR ---
     if (user.rol == 'admin') {
       Navigator.pushReplacement(
         context,
@@ -60,7 +74,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       return;
     }
 
-    // Si es cliente regular, continúa con la lógica normal de la tienda
+    // Si es cliente regular, actualiza el estado local de la tienda
     setState(() {
       currentUser = user;
       isLoggedIn = true;

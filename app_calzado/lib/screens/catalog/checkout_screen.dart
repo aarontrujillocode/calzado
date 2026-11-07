@@ -3,7 +3,7 @@ import 'package:app_calzado/models/cart_item_model.dart';
 import 'package:app_calzado/services/cart_service.dart';
 import 'package:app_calzado/screens/auth/order_success_screen.dart';
 import 'package:app_calzado/services/api_service.dart';
-import 'package:app_calzado/services/orders_service.dart'; // <--- Importante para actualizar los pedidos
+import 'package:app_calzado/services/orders_service.dart';
 import 'package:app_calzado/models/user_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -30,12 +30,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void _confirmPayment() async {
     setState(() => _isProcessing = true);
 
+    // 1. Simular una ligera demora de procesamiento (2 segundos) antes de procesar el pago
+    await Future.delayed(const Duration(seconds: 2));
+
     final double totalCalculado = widget.subtotal + shippingFee;
     
-    // Obtenemos el ID real del usuario logueado (si es null, usa 1 por seguridad)
+    // Obtenemos el ID real del usuario logueado (si es null, usa 1 por seguridad)[cite: 8]
     final int usuarioId = widget.currentUser?.id ?? 1; 
 
-    // 1. Enviar pedido al servidor PHP para registrar en MySQL y descontar stock
+    // 2. Enviar pedido al servidor PHP para registrar en MySQL y descontar stock[cite: 8]
     bool exitoBD = await ApiService.createOrder(
       usuarioId: usuarioId,
       total: totalCalculado,
@@ -54,15 +57,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    // 2. Sincronizar el historial de pedidos de este usuario inmediatamente desde MySQL
+    // 3. Sincronizar el historial de pedidos de este usuario inmediatamente desde MySQL[cite: 8]
     await OrdersService.instance.fetchOrders(usuarioId);
 
-    // 3. Vaciar el carrito de compras
+    // 4. Vaciar el carrito de compras[cite: 8]
     CartService.instance.clearCart();
 
     if (!mounted) return;
 
-    // 4. Navegar a la pantalla de éxito
+    // 5. Navegar a la pantalla de éxito pasando el usuario actual[cite: 8, 9]
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -73,6 +76,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           shippingFee: shippingFee,
           discount: 0.0,
           total: totalCalculado,
+          currentUser: widget.currentUser, // <--- Pasamos el usuario actual[cite: 8, 9]
         ),
       ),
     );

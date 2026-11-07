@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/user_model.dart';
-import '../admin/admin_main_layout.dart'; // <--- Importante para la ruta del panel admin
+import '../admin/admin_main_layout.dart'; // <--- Ruta del panel admin
+import '../../main.dart'; // <--- Importante para navegar a MainLayoutScreen con usuario inicial
 
 class LoginScreen extends StatefulWidget {
-  final Function(UserModel)? onLoginSuccess; // Hecho opcional para mayor flexibilidad
+  final Function(UserModel)? onLoginSuccess; // Callback opcional para clientes
 
   const LoginScreen({super.key, this.onLoginSuccess});
 
@@ -55,22 +56,28 @@ class _LoginScreenState extends State<LoginScreen> {
       if (isLogin) {
         final user = UserModel.fromJson(result['user']);
 
-        // --- VERIFICACIÓN DE ROL ---
-        if (user.rol == 'admin') {
-          // Si es administrador, lo mandamos directo al panel de control
-          Navigator.pushReplacement(
+        // --- VERIFICACIÓN DE ROL Y NAVEGACIÓN ---
+        if (user.rol == 'admin' || user.rol == 'administrador') {
+          // Si es administrador, limpiamos historial y vamos al panel admin
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (context) => AdminMainLayout(adminUser: user),
             ),
+            (route) => false,
           );
         } else {
-          // Si es cliente regular, ejecutamos el callback normal de la tienda
+          // Si es cliente regular
           if (widget.onLoginSuccess != null) {
             widget.onLoginSuccess!(user);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('¡Bienvenido, ${user.nombre}!')),
+            // Si la pantalla de login es la raíz (ej. tras cerrar sesión en el admin)
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainLayoutScreen(initialUser: user),
+              ),
+              (route) => false,
             );
           }
         }
@@ -344,6 +351,7 @@ class _LoginScreenState extends State<LoginScreen> {
     VoidCallback? onToggleVisibility,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    hotfix: // placeholder
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
